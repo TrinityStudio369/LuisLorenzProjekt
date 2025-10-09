@@ -26,8 +26,6 @@ export interface Camera {
 }
 
 export interface GameState {
-  humanity: number;
-  kiControl: number;
   score: number;
   isGameRunning: boolean;
   isGameWon: boolean;
@@ -50,7 +48,11 @@ export enum EntityType {
   DATA_PELLET = 'data_pellet',
   CIV = 'civ',
   ALLY = 'ally',
-  NODE = 'node'
+  NODE = 'node',
+  SPEED_BOOST = 'speed_boost',
+  BOSS_BOT = 'boss_bot',
+  POINT_MULTIPLIER = 'point_multiplier',
+  FUSION_POWER = 'fusion_power'
 }
 
 export interface GameConfig {
@@ -78,4 +80,55 @@ export interface Particle {
   maxLife: number;
   color: string;
   size: number;
+}
+
+export interface SplitAnimation {
+  id: string;
+  startPosition: Position;
+  endPosition: Position;
+  progress: number;
+  duration: number;
+  type: 'split' | 'merge';
+}
+
+export interface MergeAnimation {
+  id: string;
+  cells: Position[];
+  centerPosition: Position;
+  progress: number;
+  duration: number;
+}
+
+export interface EatingAnimation {
+  id: string;
+  entityId: string;
+  startScale: number;
+  targetScale: number;
+  progress: number;
+  duration: number;
+}
+
+export interface SplitScaleAnimation {
+  id: string;
+  entityId: string;
+  startScale: number;
+  targetScale: number;
+  progress: number;
+  duration: number;
+}
+
+export interface SpeedBoost {
+  id: string;
+  startTime: number;
+  duration: number;
+  multiplier: number;
+}
+
+export interface SpawnAnimation {
+  id: string;
+  position: Position;
+  startTime: number;
+  duration: number;
+  maxRadius: number;
+  color: string;
 }

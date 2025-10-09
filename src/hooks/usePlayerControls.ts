@@ -26,15 +26,9 @@ export function usePlayerControls({ onMove, onSkill, canvasRef, camera, canvasSi
     const canvasY = screenY - rect.top;
 
     // Convert canvas coordinates to world coordinates
-    let worldX = (canvasX - canvasSize.width / 2) / camera.zoom + camera.x;
-    let worldY = (canvasY - canvasSize.height / 2) / camera.zoom + camera.y;
-
-    // DEBUG: Log detailed conversion
-    console.log(`🔍 Conversion: canvas(${canvasX.toFixed(0)},${canvasY.toFixed(0)}) + camera(${camera.x.toFixed(1)},${camera.y.toFixed(1)}) * zoom(${camera.zoom.toFixed(2)}) = world(${worldX.toFixed(1)},${worldY.toFixed(1)})`);
-
-    // TEMP: Ensure we can go negative (add extra offset)
-    if (canvasX < canvasSize.width / 2) worldX -= 500; // Extra push left
-    if (canvasY < canvasSize.height / 2) worldY -= 500; // Extra push up
+    // This is the correct formula for camera-based coordinate conversion
+    const worldX = (canvasX - canvasSize.width / 2) / camera.zoom + camera.x;
+    const worldY = (canvasY - canvasSize.height / 2) / camera.zoom + camera.y;
 
     return { x: worldX, y: worldY };
   }, [canvasRef, camera, canvasSize]);
@@ -87,12 +81,11 @@ export function usePlayerControls({ onMove, onSkill, canvasRef, camera, canvasSi
     // Always update player target position (like in Agar.io - player always moves toward mouse)
     const worldPos = screenToWorld(event.clientX, event.clientY);
 
-    // Debug output - show mouse direction
-    const direction = worldPos.x >= 0 && worldPos.y >= 0 ? '↘️' :
-                     worldPos.x >= 0 && worldPos.y < 0 ? '↗️' :
-                     worldPos.x < 0 && worldPos.y >= 0 ? '↙️' : '↖️';
-
-    if (Math.random() < 0.05) { // ~5% chance per mouse move
+    // Debug output - show mouse direction (reduced frequency)
+    if (Math.random() < 0.01) { // ~1% chance per mouse move
+      const direction = worldPos.x >= 0 && worldPos.y >= 0 ? '↘️' :
+                       worldPos.x >= 0 && worldPos.y < 0 ? '↗️' :
+                       worldPos.x < 0 && worldPos.y >= 0 ? '↙️' : '↖️';
       console.log(`🖱️ Mouse ${direction}: screen(${event.clientX.toFixed(0)},${event.clientY.toFixed(0)}) -> world(${worldPos.x.toFixed(1)},${worldPos.y.toFixed(1)})`);
     }
 

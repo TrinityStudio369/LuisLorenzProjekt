@@ -1,20 +1,38 @@
 import { create } from 'zustand';
 import { GameState, Skill } from '../types/game';
 
+export interface PowerUpStatus {
+  speedBoost: {
+    isActive: boolean;
+    multiplier: number;
+    timeRemaining: number;
+  };
+  pointMultiplier: {
+    isActive: boolean;
+    multiplier: number;
+    timeRemaining: number;
+  };
+  fusionCooldownReduction: {
+    isActive: boolean;
+    timeRemaining: number;
+  };
+}
+
 interface GameStore extends GameState {
   // Actions
-  updateHumanity: (amount: number) => void;
-  updateKIControl: (amount: number) => void;
   updateScore: (amount: number) => void;
   startGame: () => void;
   endGame: (won: boolean) => void;
   resetGame: () => void;
-  checkWinLoseConditions: () => void;
 
   // Skills
   skills: Skill[];
   activateSkill: (skillId: string) => boolean;
   updateSkillCooldowns: (deltaTime: number) => void;
+
+  // Power-ups
+  powerUpStatus: PowerUpStatus;
+  updatePowerUpStatus: (status: PowerUpStatus) => void;
 
   // Game config
   isPaused: boolean;
@@ -56,32 +74,34 @@ const initialSkills: Skill[] = [
   }
 ];
 
+const initialPowerUpStatus: PowerUpStatus = {
+  speedBoost: {
+    isActive: false,
+    multiplier: 1.0,
+    timeRemaining: 0
+  },
+  pointMultiplier: {
+    isActive: false,
+    multiplier: 1.0,
+    timeRemaining: 0
+  },
+  fusionCooldownReduction: {
+    isActive: false,
+    timeRemaining: 0
+  }
+};
+
 export const useGameStore = create<GameStore>((set, get) => ({
   // Initial state
-  humanity: 50,
-  kiControl: 50,
   score: 0,
   isGameRunning: false,
   isGameWon: false,
   isGameLost: false,
   isPaused: false,
   skills: initialSkills,
+  powerUpStatus: initialPowerUpStatus,
 
   // Actions
-  updateHumanity: (amount: number) => {
-    set((state) => ({
-      humanity: Math.max(0, Math.min(100, state.humanity + amount))
-    }));
-    get().checkWinLoseConditions();
-  },
-
-  updateKIControl: (amount: number) => {
-    set((state) => ({
-      kiControl: Math.max(0, Math.min(100, state.kiControl + amount))
-    }));
-    get().checkWinLoseConditions();
-  },
-
   updateScore: (amount: number) => {
     set((state) => ({
       score: Math.max(0, state.score + amount)
@@ -93,8 +113,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
       isGameRunning: true,
       isGameWon: false,
       isGameLost: false,
-      humanity: 50,
-      kiControl: 50,
       score: 0
     });
   },
@@ -109,13 +127,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   resetGame: () => {
     set({
-      humanity: 50,
-      kiControl: 50,
       score: 0,
       isGameRunning: false,
       isGameWon: false,
       isGameLost: false,
-      skills: initialSkills.map(skill => ({ ...skill, currentCooldown: 0, isActive: false }))
+      skills: initialSkills.map(skill => ({ ...skill, currentCooldown: 0, isActive: false })),
+      powerUpStatus: initialPowerUpStatus
     });
   },
 
@@ -168,13 +185,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }));
   },
 
-  // Helper method
-  checkWinLoseConditions: () => {
-    const state = get();
-    if (state.humanity >= 85 && state.kiControl <= 20) {
-      state.endGame(true); // Harmony achieved
-    } else if (state.humanity <= 0 || state.kiControl >= 100) {
-      state.endGame(false); // Lost
-    }
+  updatePowerUpStatus: (status: PowerUpStatus) => {
+    set({ powerUpStatus: status });
   }
 }));

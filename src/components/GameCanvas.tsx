@@ -8,6 +8,9 @@ import {
   PlayerCell,
   BotCell,
   FoodPellet,
+  SpeedBoostTriangle,
+  PointMultiplierTriangle,
+  FusionCooldownReductionTriangle,
   Cell,
   AIState
 } from '../utils/entities';
@@ -44,6 +47,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ playerName }) => {
   const [player, setPlayer] = useState<PlayerCell | null>(null);
   const [bots, setBots] = useState<BotCell[]>([]);
   const [foodPellets, setFoodPellets] = useState<FoodPellet[]>([]);
+  const [speedBoosts, setSpeedBoosts] = useState<SpeedBoostTriangle[]>([]);
+  const [pointMultipliers, setPointMultipliers] = useState<PointMultiplierTriangle[]>([]);
+  const [fusionCooldownReductions, setFusionCooldownReductions] = useState<FusionCooldownReductionTriangle[]>([]);
   const [canvasSize, setCanvasSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   const [camera, setCamera] = useState<Camera>({
     x: 0,
@@ -63,11 +69,19 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ playerName }) => {
   const playerRef = useRef<PlayerCell | null>(null);
   const botsRef = useRef<BotCell[]>([]);
   const pelletsRef = useRef<FoodPellet[]>([]);
+  const speedBoostsRef = useRef<SpeedBoostTriangle[]>([]);
+  const pointMultipliersRef = useRef<PointMultiplierTriangle[]>([]);
+  const fusionCooldownReductionsRef = useRef<FusionCooldownReductionTriangle[]>([]);
   const particleSystemRef = useRef<ParticleSystem | null>(null);
   const keysPressed = useRef<Set<string>>(new Set());
   const containerRef = useRef<HTMLDivElement>(null);
   const gameEngineRef = useRef<GameEngine | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  
+  // Triangle spawning timers
+  const lastSpeedBoostSpawnRef = useRef<number>(0);
+  const lastPointMultiplierSpawnRef = useRef<number>(0);
+  const lastFusionCooldownReductionSpawnRef = useRef<number>(0);
 
   // Resize canvas to fit container
   const updateCanvasSize = useCallback(() => {
@@ -164,6 +178,54 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ playerName }) => {
     setBots(botCells);
     botsRef.current = botCells;
 
+    // Create giant cells - rare but powerful enemies!
+    console.log('Creating giant cells...');
+    const giantCells: BotCell[] = [];
+    const giantCount = Math.floor(Math.random() * 3) + 1; // 1-3 giant cells
+    
+    for (let i = 0; i < giantCount; i++) {
+      let x, y;
+      let attempts = 0;
+      do {
+        x = Math.random() * 3000;
+        y = Math.random() * 3000;
+        attempts++;
+      } while (Math.sqrt((x - playerX) ** 2 + (y - playerY) ** 2) < 600 && attempts < 10); // Min 600 units from player
+
+      // Create giant cells with massive sizes
+      const giantMasses = [150, 250, 400]; // Giant cell sizes
+      const mass = giantMasses[i] || 200;
+      
+      const giant = new BotCell(
+        `giant_${entityId++}`,
+        x,
+        y,
+        mass
+      );
+      giantCells.push(giant);
+      
+      console.log(`👹 Giant ${i}: (${x.toFixed(1)}, ${y.toFixed(1)}) mass: ${mass} distance from player: ${Math.sqrt((x - playerX) ** 2 + (y - playerY) ** 2).toFixed(1)}`);
+    }
+    
+    // Add giant cells to the regular bot array
+    botCells.push(...giantCells);
+    setBots(botCells);
+    botsRef.current = botCells;
+
+    // Initialize empty triangle arrays - triangles will spawn continuously
+    console.log('Initializing triangle spawning system...');
+    setSpeedBoosts([]);
+    speedBoostsRef.current = [];
+    setPointMultipliers([]);
+    pointMultipliersRef.current = [];
+    setFusionCooldownReductions([]);
+    fusionCooldownReductionsRef.current = [];
+    
+    // Initialize spawn timers
+    lastSpeedBoostSpawnRef.current = Date.now();
+    lastPointMultiplierSpawnRef.current = Date.now();
+    lastFusionCooldownReductionSpawnRef.current = Date.now();
+
     // Spawn player at positive coordinates (500, 500) - center of positive quadrant
     playerCell.position.x = 500;
     playerCell.position.y = 500;
@@ -189,6 +251,86 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ playerName }) => {
     });
   }, [playerName, canvasSize]); // Keep canvasSize for config
 
+  // Continuous triangle spawning
+  const spawnTriangles = useCallback(() => {
+    const now = Date.now();
+    const currentPlayer = playerRef.current;
+    if (!currentPlayer) return;
+
+    // Spawn speed boost triangles every 16-30 seconds (halved)
+    if (now - lastSpeedBoostSpawnRef.current > 16000 + Math.random() * 14000) {
+      const x = Math.random() * 3000;
+      const y = Math.random() * 3000;
+      
+      // Avoid spawning too close to player
+      const distanceFromPlayer = Math.sqrt((x - currentPlayer.position.x) ** 2 + (y - currentPlayer.position.y) ** 2);
+      if (distanceFromPlayer > 300) {
+        const triangle = new SpeedBoostTriangle(
+          `speed_boost_${Date.now()}`,
+          x,
+          y
+        );
+        
+        const newTriangles = [...speedBoostsRef.current, triangle];
+        setSpeedBoosts(newTriangles);
+        speedBoostsRef.current = newTriangles;
+        lastSpeedBoostSpawnRef.current = now;
+        
+        console.log(`🔵 Spawned speed boost triangle at (${x.toFixed(1)}, ${y.toFixed(1)}) - Total: ${newTriangles.length}`);
+      } else {
+        console.log(`🔵 Speed boost triangle spawn blocked - too close to player (${distanceFromPlayer.toFixed(1)} < 300)`);
+      }
+    }
+
+    // Spawn point multiplier triangles every 24-40 seconds (halved)
+    if (now - lastPointMultiplierSpawnRef.current > 24000 + Math.random() * 16000) {
+      const x = Math.random() * 3000;
+      const y = Math.random() * 3000;
+      
+      const distanceFromPlayer = Math.sqrt((x - currentPlayer.position.x) ** 2 + (y - currentPlayer.position.y) ** 2);
+      if (distanceFromPlayer > 300) {
+        const triangle = new PointMultiplierTriangle(
+          `point_mult_${Date.now()}`,
+          x,
+          y
+        );
+        
+        const newTriangles = [...pointMultipliersRef.current, triangle];
+        setPointMultipliers(newTriangles);
+        pointMultipliersRef.current = newTriangles;
+        lastPointMultiplierSpawnRef.current = now;
+        
+        console.log(`🔴 Spawned point multiplier triangle at (${x.toFixed(1)}, ${y.toFixed(1)}) - Total: ${newTriangles.length}`);
+      } else {
+        console.log(`🔴 Point multiplier triangle spawn blocked - too close to player (${distanceFromPlayer.toFixed(1)} < 300)`);
+      }
+    }
+
+    // Spawn fusion cooldown reduction triangles every 40-60 seconds (halved)
+    if (now - lastFusionCooldownReductionSpawnRef.current > 40000 + Math.random() * 20000) {
+      const x = Math.random() * 3000;
+      const y = Math.random() * 3000;
+      
+      const distanceFromPlayer = Math.sqrt((x - currentPlayer.position.x) ** 2 + (y - currentPlayer.position.y) ** 2);
+      if (distanceFromPlayer > 300) {
+        const triangle = new FusionCooldownReductionTriangle(
+          `fusion_cooldown_reduction_${Date.now()}`,
+          x,
+          y
+        );
+        
+        const newTriangles = [...fusionCooldownReductionsRef.current, triangle];
+        setFusionCooldownReductions(newTriangles);
+        fusionCooldownReductionsRef.current = newTriangles;
+        lastFusionCooldownReductionSpawnRef.current = now;
+        
+        console.log(`🟢 Spawned fusion cooldown reduction triangle at (${x.toFixed(1)}, ${y.toFixed(1)}) - Total: ${newTriangles.length}`);
+      } else {
+        console.log(`🟢 Fusion cooldown reduction triangle spawn blocked - too close to player (${distanceFromPlayer.toFixed(1)} < 300)`);
+      }
+    }
+  }, []);
+
   // Update camera based on player position and size
   const updateCamera = useCallback((playerCell: PlayerCell, config: any) => {
     // Calculate target camera position to center on player
@@ -206,7 +348,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ playerName }) => {
     const currentZoom = cameraRef.current.zoom;
 
     // Lerp factor - adjust for smoothness (0.1 = slow, 0.9 = fast)
-    const lerpFactor = 0.1;
+    const lerpFactor = 0.15; // Increased for smoother camera following
 
     const newX = currentX + (targetX - currentX) * lerpFactor;
     const newY = currentY + (targetY - currentY) * lerpFactor;
@@ -276,6 +418,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ playerName }) => {
       const currentPellets = pelletsRef.current;
       const currentBots = botsRef.current;
       const currentPlayer = playerRef.current;
+      const currentSpeedBoosts = speedBoostsRef.current;
+      const currentPointMultipliers = pointMultipliersRef.current;
+      const currentFusionCooldownReductions = fusionCooldownReductionsRef.current;
 
       // Initialize particle system if needed
     if (!particleSystemRef.current) {
@@ -332,8 +477,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ playerName }) => {
         }
       }
 
-      // Debug output (reduced frequency)
-      if (Math.random() < 0.008) { // ~0.5 FPS debug output
+      // Debug output (very reduced frequency)
+      if (Math.random() < 0.001) { // ~0.1 FPS debug output
         console.log(`🎮 Entities: ${currentPellets.length} pellets, ${currentBots.length} bots, ${currentPlayer ? 1 : 0} player`);
         if (currentPlayer) {
           const target = currentPlayer.getTargetPosition();
@@ -355,17 +500,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ playerName }) => {
       // Render entities using refs (immediate access)
 
       if (currentPellets.length > 0) {
-        console.log(`🍎 Rendering ${currentPellets.length} food pellets...`);
         currentPellets.forEach((pellet, i) => {
           try {
             pellet.draw(ctx, cameraRef.current);
-            // Debug dot for first few
-            if (i < 10) {
-              const screenX = (pellet.position.x - cameraRef.current.x) * cameraRef.current.zoom + cameraRef.current.canvasWidth / 2;
-              const screenY = (pellet.position.y - cameraRef.current.y) * cameraRef.current.zoom + cameraRef.current.canvasHeight / 2;
-              ctx.fillStyle = '#ff0000';
-              ctx.fillRect(screenX - 1, screenY - 1, 2, 2);
-            }
           } catch (error) {
             console.error(`Error rendering pellet ${i}:`, error);
           }
@@ -373,42 +510,70 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ playerName }) => {
       }
 
       if (currentBots.length > 0) {
-        console.log(`🤖 Rendering ${currentBots.length} bots...`);
+        console.log(`🎨 Rendering ${currentBots.length} bots`);
         currentBots.forEach((bot, i) => {
           try {
             bot.draw(ctx, cameraRef.current);
-            // Debug dot for first few
-            if (i < 5) {
-              const screenX = (bot.position.x - cameraRef.current.x) * cameraRef.current.zoom + cameraRef.current.canvasWidth / 2;
-              const screenY = (bot.position.y - cameraRef.current.y) * cameraRef.current.zoom + cameraRef.current.canvasHeight / 2;
-              ctx.fillStyle = '#0000ff';
-              ctx.fillRect(screenX - 2, screenY - 2, 4, 4);
-            }
           } catch (error) {
             console.error(`Error rendering bot ${i}:`, error);
           }
         });
+      } else {
+        console.log('❌ No bots to render');
+      }
+
+
+      if (currentSpeedBoosts.length > 0) {
+        console.log(`🎨 Rendering ${currentSpeedBoosts.length} speed boost triangles`);
+        currentSpeedBoosts.forEach((triangle, i) => {
+          try {
+            triangle.draw(ctx, cameraRef.current);
+          } catch (error) {
+            console.error(`Error rendering speed boost triangle ${i}:`, error);
+          }
+        });
+      } else {
+        console.log('❌ No speed boost triangles to render');
+      }
+
+      if (currentPointMultipliers.length > 0) {
+        console.log(`🎨 Rendering ${currentPointMultipliers.length} point multiplier triangles`);
+        currentPointMultipliers.forEach((triangle, i) => {
+          try {
+            triangle.draw(ctx, cameraRef.current);
+          } catch (error) {
+            console.error(`Error rendering point multiplier triangle ${i}:`, error);
+          }
+        });
+      } else {
+        console.log('❌ No point multiplier triangles to render');
+      }
+
+      if (currentFusionCooldownReductions.length > 0) {
+        console.log(`🎨 Rendering ${currentFusionCooldownReductions.length} fusion cooldown reduction triangles`);
+        currentFusionCooldownReductions.forEach((triangle, i) => {
+          try {
+            triangle.draw(ctx, cameraRef.current);
+          } catch (error) {
+            console.error(`Error rendering fusion cooldown reduction triangle ${i}:`, error);
+          }
+        });
+      } else {
+        console.log('❌ No fusion cooldown reduction triangles to render');
       }
 
       if (currentPlayer) {
-        console.log('👤 Rendering player...');
         try {
           currentPlayer.draw(ctx, cameraRef.current);
-          // Debug marker
-          const screenX = (currentPlayer.position.x - cameraRef.current.x) * cameraRef.current.zoom + cameraRef.current.canvasWidth / 2;
-          const screenY = (currentPlayer.position.y - cameraRef.current.y) * cameraRef.current.zoom + cameraRef.current.canvasHeight / 2;
-          ctx.fillStyle = '#00ff00';
-          ctx.fillRect(screenX - 3, screenY - 3, 6, 6);
-          console.log(`Player rendered at screen: (${screenX.toFixed(1)}, ${screenY.toFixed(1)})`);
         } catch (error) {
           console.error('Error rendering player:', error);
         }
       }
 
-      // Debug: Draw entity count and positions
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '12px Arial';
-      ctx.fillText(`Entities: ${currentPellets.length} food, ${currentBots.length} bots, ${currentPlayer ? 1 : 0} player`, 10, canvasSize.height - 40);
+    // Debug: Draw entity count and positions
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '12px Arial';
+    ctx.fillText(`Entities: ${currentPellets.length} food, ${currentBots.length} bots, ${currentPlayer ? 1 : 0} player, ${currentSpeedBoosts.length} speed, ${currentPointMultipliers.length} points, ${currentFusionCooldownReductions.length} fusion`, 10, canvasSize.height - 40);
 
       if (currentPlayer) {
         ctx.fillText(`Player pos: (${Math.round(currentPlayer.position.x)}, ${Math.round(currentPlayer.position.y)})`, 10, canvasSize.height - 25);
@@ -437,6 +602,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ playerName }) => {
     const currentPlayer = playerRef.current;
     const currentPellets = pelletsRef.current;
     const currentBots = botsRef.current;
+    const currentSpeedBoosts = speedBoostsRef.current;
+    const currentPointMultipliers = pointMultipliersRef.current;
+    const currentFusionCooldownReductions = fusionCooldownReductionsRef.current;
 
     if (!currentPlayer) return;
 
@@ -448,6 +616,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ playerName }) => {
     const playerCells = currentPlayer.getAllCells();
     let pelletsToRemove: string[] = [];
     let botsToRemove: string[] = [];
+    let playerCellsToRemove: string[] = [];
+    let speedBoostsToRemove: string[] = [];
+    let pointMultipliersToRemove: string[] = [];
+    let fusionCooldownReductionsToRemove: string[] = [];
 
     // Check player cells vs food pellets
     playerCells.forEach(playerCell => {
@@ -459,7 +631,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ playerName }) => {
         );
 
         if (distance < playerCell.size + pellet.size) {
-          // Player eats pellet
+          // Player eats pellet - NO scale effect for pellets
           playerCell.addMass(pellet.getMass());
           pellet.getEaten();
 
@@ -475,7 +647,94 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ playerName }) => {
       });
     });
 
-    // Check player cells vs bot cells
+    // Check player cells vs speed boost triangles
+    playerCells.forEach(playerCell => {
+      currentSpeedBoosts.forEach(triangle => {
+        if (!triangle) return;
+        const distance = Math.sqrt(
+          Math.pow(playerCell.position.x - triangle.position.x, 2) +
+          Math.pow(playerCell.position.y - triangle.position.y, 2)
+        );
+
+        if (distance < playerCell.size + triangle.size) {
+          // Player collects speed boost triangle
+          playerCell.startSpeedBoostFromTriangle(triangle.getSpeedBoost(), triangle.getSpeedBoostDuration());
+
+          // Create particle effect
+          particleSystemRef.current?.createParticleBurst(
+            triangle.position,
+            8,
+            { color: '#00ff88', speed: 80, size: 2, life: 800 }
+          );
+
+          speedBoostsToRemove.push(triangle.id);
+        }
+      });
+    });
+
+    // Check player cells vs point multiplier triangles
+    playerCells.forEach(playerCell => {
+      currentPointMultipliers.forEach(triangle => {
+        if (!triangle) return;
+        const distance = Math.sqrt(
+          Math.pow(playerCell.position.x - triangle.position.x, 2) +
+          Math.pow(playerCell.position.y - triangle.position.y, 2)
+        );
+
+        if (distance < playerCell.size + triangle.size) {
+          // Player collects point multiplier triangle
+          playerCell.startPointMultiplier(triangle.getPointMultiplier(), triangle.getPointMultiplierDuration());
+
+          // Create particle effect
+          particleSystemRef.current?.createParticleBurst(
+            triangle.position,
+            10,
+            { color: '#ff4444', speed: 100, size: 3, life: 1000 }
+          );
+
+          pointMultipliersToRemove.push(triangle.id);
+        }
+      });
+    });
+
+    // Check player cells vs fusion cooldown reduction triangles
+    playerCells.forEach(playerCell => {
+      currentFusionCooldownReductions.forEach(triangle => {
+        if (!triangle) return;
+        const distance = Math.sqrt(
+          Math.pow(playerCell.position.x - triangle.position.x, 2) +
+          Math.pow(playerCell.position.y - triangle.position.y, 2)
+        );
+
+        if (distance < playerCell.size + triangle.size) {
+          // Player collects fusion cooldown reduction triangle
+          if (playerCell instanceof PlayerCell) {
+            // Get the main player cell (the one that controls everything)
+            const mainPlayer = playerRef.current;
+            if (mainPlayer) {
+              // Apply fusion cooldown reduction to main player
+              mainPlayer.startFusionCooldownReduction();
+              console.log(`🟢 Green powerup collected! Fusion cooldown halved for main player`);
+              
+              // Debug: Show current fusion cooldown
+              console.log(`🔍 Current fusion cooldown: ${(mainPlayer.getFusionCooldownRemaining() / 1000).toFixed(1)}s`);
+              console.log(`🔍 Current split duration: ${(mainPlayer.getFusionTimeRemaining() / 1000).toFixed(1)}s`);
+            }
+          }
+
+          // Create particle effect
+          particleSystemRef.current?.createParticleBurst(
+            triangle.position,
+            12,
+            { color: '#00ff00', speed: 120, size: 4, life: 1200 }
+          );
+
+          fusionCooldownReductionsToRemove.push(triangle.id);
+        }
+      });
+    });
+
+    // Check player cells vs bot cells with improved collision mechanics
     playerCells.forEach(playerCell => {
       currentBots.forEach(bot => {
         if (!bot) return;
@@ -484,10 +743,13 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ playerName }) => {
           Math.pow(playerCell.position.y - bot.position.y, 2)
         );
 
-        if (distance < playerCell.size + bot.size) {
+        // Calculate collision threshold - require more overlap than just touching
+        const collisionThreshold = (playerCell.size + bot.size) * 0.7; // 70% overlap required
+        
+        if (distance < collisionThreshold) {
           if (playerCell.canEat(bot)) {
-            // Player eats bot
-            playerCell.addMass(bot.getMass());
+            // Player eats bot - WITH scale effect
+            playerCell.addMass(bot.getMass(), true);
 
             // Create particle effect
             particleSystemRef.current?.createExplosion(
@@ -497,7 +759,11 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ playerName }) => {
 
             botsToRemove.push(bot.id);
           } else if (bot.canEat(playerCell)) {
-            // Bot eats player cell
+            // Bot eats player cell - only the specific cell that was touched
+            console.log(`💀 BOT EATING PLAYER! Bot mass: ${bot.getMass()}, Player mass: ${playerCell.getMass()}`);
+            console.log(`Bot position: (${bot.position.x.toFixed(1)}, ${bot.position.y.toFixed(1)})`);
+            console.log(`Player position: (${playerCell.position.x.toFixed(1)}, ${playerCell.position.y.toFixed(1)})`);
+            
             bot.addMass(playerCell.getMass());
 
             // Create particle effect
@@ -506,24 +772,22 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ playerName }) => {
               { color: '#ff0000', intensity: 15, size: 5 }
             );
 
-            // Remove player cell
-            const playerIndex = playerCells.indexOf(playerCell);
-            if (playerIndex !== -1) {
-              playerCells.splice(playerIndex, 1);
-              if (playerCells.length === 0) {
-                // All player cells eaten - game over
-                console.log('💀 PLAYER DIED - Game Over!');
-                gameStore.endGame(false); // false = lost
-              }
+            // Mark this specific player cell for removal
+            playerCellsToRemove.push(playerCell.id);
+            
+            // If this was the main player cell, check if we have other cells
+            if (playerCell.id === currentPlayer.id) {
+              console.log('💀 MAIN PLAYER CELL EATEN! Checking for remaining cells...');
+              // Don't end game immediately - let the removal logic handle it
             }
-
-            botsToRemove.push(bot.id); // Bot gets removed too for balance
           }
         }
       });
     });
 
+
     // Prevent player cells from eating each other (no cannibalism)
+    // Only apply to split cells, not main cell vs split cells
     for (let i = 0; i < playerCells.length; i++) {
       for (let j = i + 1; j < playerCells.length; j++) {
         const cell1 = playerCells[i];
@@ -580,6 +844,57 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ playerName }) => {
       botsRef.current = currentBots.filter(bot => !botsToRemove.includes(bot.id));
       setBots(botsRef.current);
     }
+
+
+    if (speedBoostsToRemove.length > 0) {
+      speedBoostsRef.current = currentSpeedBoosts.filter(triangle => !speedBoostsToRemove.includes(triangle.id));
+      setSpeedBoosts(speedBoostsRef.current);
+    }
+
+    if (pointMultipliersToRemove.length > 0) {
+      pointMultipliersRef.current = currentPointMultipliers.filter(triangle => !pointMultipliersToRemove.includes(triangle.id));
+      setPointMultipliers(pointMultipliersRef.current);
+    }
+
+    if (fusionCooldownReductionsToRemove.length > 0) {
+      fusionCooldownReductionsRef.current = currentFusionCooldownReductions.filter(triangle => !fusionCooldownReductionsToRemove.includes(triangle.id));
+      setFusionCooldownReductions(fusionCooldownReductionsRef.current);
+    }
+
+    // Handle removal of specific player cells (split cells)
+    if (playerCellsToRemove.length > 0 && currentPlayer) {
+      // Check if main player cell was eaten
+      const mainCellEaten = playerCellsToRemove.includes(currentPlayer.id);
+      
+      if (mainCellEaten) {
+        // Main cell was eaten - check if we have split cells to take over
+        if (currentPlayer.splitCells.length > 0) {
+          // Promote first split cell to main cell
+          const newMainCell = currentPlayer.splitCells[0];
+          currentPlayer.splitCells.splice(0, 1);
+          
+          // Use the new method to promote split cell
+          currentPlayer.promoteSplitCellToMain(newMainCell);
+          
+          console.log('🔄 Main cell eaten! Promoting split cell to main cell.');
+        } else {
+          // No split cells left - game over
+          console.log('💀 ALL PLAYER CELLS EATEN - Game Over!');
+          gameStore.endGame(false); // false = lost
+          return;
+        }
+      }
+      
+      // Remove other split cells that were eaten
+      currentPlayer.removeSplitCells(playerCellsToRemove);
+      
+      // Reset split level if no split cells remain
+      if (currentPlayer.splitCells.length === 0) {
+        currentPlayer.resetSplitLevel();
+      }
+      
+      console.log(`🍽️ ${playerCellsToRemove.length} player cells eaten by bots. Remaining: ${currentPlayer.getAllCells().length} cells`);
+    }
   }, []);
 
   // Player controls - only mouse movement
@@ -598,6 +913,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ playerName }) => {
     const currentPellets = pelletsRef.current;
     const currentBots = botsRef.current;
     const currentPlayer = playerRef.current;
+    const currentSpeedBoosts = speedBoostsRef.current;
+    const currentPointMultipliers = pointMultipliersRef.current;
+    const currentFusionCooldownReductions = fusionCooldownReductionsRef.current;
 
     // Clear canvas
     ctx.clearRect(0, 0, canvasSize.width, canvasSize.height);
@@ -660,6 +978,40 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ playerName }) => {
       });
     }
 
+    // Render power triangles
+    if (currentSpeedBoosts.length > 0) {
+      console.log(`🎨 Rendering ${currentSpeedBoosts.length} speed boost triangles`);
+      currentSpeedBoosts.forEach((triangle, i) => {
+        try {
+          triangle.draw(ctx, cameraRef.current);
+        } catch (error) {
+          console.error(`Error rendering speed boost triangle ${i}:`, error);
+        }
+      });
+    }
+
+    if (currentPointMultipliers.length > 0) {
+      console.log(`🎨 Rendering ${currentPointMultipliers.length} point multiplier triangles`);
+      currentPointMultipliers.forEach((triangle, i) => {
+        try {
+          triangle.draw(ctx, cameraRef.current);
+        } catch (error) {
+          console.error(`Error rendering point multiplier triangle ${i}:`, error);
+        }
+      });
+    }
+
+    if (currentFusionCooldownReductions.length > 0) {
+      console.log(`🎨 Rendering ${currentFusionCooldownReductions.length} fusion cooldown reduction triangles`);
+      currentFusionCooldownReductions.forEach((triangle, i) => {
+        try {
+          triangle.draw(ctx, cameraRef.current);
+        } catch (error) {
+          console.error(`Error rendering fusion cooldown reduction triangle ${i}:`, error);
+        }
+      });
+    }
+
     if (currentBots.length > 0) {
       console.log(`🤖 Rendering ${currentBots.length} bots...`);
       currentBots.forEach((bot, i) => {
@@ -674,6 +1026,74 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ playerName }) => {
           }
         } catch (error) {
           console.error(`Error rendering bot ${i}:`, error);
+        }
+      });
+    }
+
+    // Render power triangles
+    if (currentSpeedBoosts.length > 0) {
+      console.log(`🎨 Rendering ${currentSpeedBoosts.length} speed boost triangles`);
+      currentSpeedBoosts.forEach((triangle, i) => {
+        try {
+          triangle.draw(ctx, cameraRef.current);
+        } catch (error) {
+          console.error(`Error rendering speed boost triangle ${i}:`, error);
+        }
+      });
+    }
+
+    if (currentPointMultipliers.length > 0) {
+      console.log(`🎨 Rendering ${currentPointMultipliers.length} point multiplier triangles`);
+      currentPointMultipliers.forEach((triangle, i) => {
+        try {
+          triangle.draw(ctx, cameraRef.current);
+        } catch (error) {
+          console.error(`Error rendering point multiplier triangle ${i}:`, error);
+        }
+      });
+    }
+
+    if (currentFusionCooldownReductions.length > 0) {
+      console.log(`🎨 Rendering ${currentFusionCooldownReductions.length} fusion cooldown reduction triangles`);
+      currentFusionCooldownReductions.forEach((triangle, i) => {
+        try {
+          triangle.draw(ctx, cameraRef.current);
+        } catch (error) {
+          console.error(`Error rendering fusion cooldown reduction triangle ${i}:`, error);
+        }
+      });
+    }
+
+    // Render power triangles
+    if (currentSpeedBoosts.length > 0) {
+      console.log(`🎨 Rendering ${currentSpeedBoosts.length} speed boost triangles`);
+      currentSpeedBoosts.forEach((triangle, i) => {
+        try {
+          triangle.draw(ctx, cameraRef.current);
+        } catch (error) {
+          console.error(`Error rendering speed boost triangle ${i}:`, error);
+        }
+      });
+    }
+
+    if (currentPointMultipliers.length > 0) {
+      console.log(`🎨 Rendering ${currentPointMultipliers.length} point multiplier triangles`);
+      currentPointMultipliers.forEach((triangle, i) => {
+        try {
+          triangle.draw(ctx, cameraRef.current);
+        } catch (error) {
+          console.error(`Error rendering point multiplier triangle ${i}:`, error);
+        }
+      });
+    }
+
+    if (currentFusionCooldownReductions.length > 0) {
+      console.log(`🎨 Rendering ${currentFusionCooldownReductions.length} fusion cooldown reduction triangles`);
+      currentFusionCooldownReductions.forEach((triangle, i) => {
+        try {
+          triangle.draw(ctx, cameraRef.current);
+        } catch (error) {
+          console.error(`Error rendering fusion cooldown reduction triangle ${i}:`, error);
         }
       });
     }
@@ -696,7 +1116,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ playerName }) => {
     // Debug: Draw entity count and positions
     ctx.fillStyle = '#ffffff';
     ctx.font = '12px Arial';
-    ctx.fillText(`Entities: ${currentPellets.length} food, ${currentBots.length} bots, ${currentPlayer ? 1 : 0} player`, 10, canvasSize.height - 40);
+    ctx.fillText(`Entities: ${currentPellets.length} food, ${currentBots.length} bots, ${currentPlayer ? 1 : 0} player, ${currentSpeedBoosts.length} speed, ${currentPointMultipliers.length} points, ${currentFusionCooldownReductions.length} fusion`, 10, canvasSize.height - 40);
 
     if (currentPlayer) {
       ctx.fillText(`Player pos: (${Math.round(currentPlayer.position.x)}, ${Math.round(currentPlayer.position.y)})`, 10, canvasSize.height - 25);
@@ -723,17 +1143,23 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ playerName }) => {
     onUpdate: (deltaTime) => {
       // Game logic updates
       if (gameStore.isGameRunning) {
-        // Update entities using refs
+        // Update entities using refs - deltaTime is already in milliseconds
         if (playerRef.current) {
-          playerRef.current.update(deltaTime / 1000);
+          playerRef.current.update(deltaTime);
           updateCamera(playerRef.current, getGameConfig(canvasSize.width, canvasSize.height));
         }
 
-        botsRef.current.forEach(bot => bot.update(deltaTime / 1000));
-        pelletsRef.current.forEach(pellet => pellet.update(deltaTime / 1000));
+        botsRef.current.forEach(bot => bot.update(deltaTime));
+        pelletsRef.current.forEach(pellet => pellet.update(deltaTime));
+        speedBoostsRef.current.forEach(triangle => triangle.update(deltaTime));
+        pointMultipliersRef.current.forEach(triangle => triangle.update(deltaTime));
+        fusionCooldownReductionsRef.current.forEach(triangle => triangle.update(deltaTime));
 
         // Update particles
         particleSystemRef.current?.update(deltaTime);
+
+        // Spawn new triangles
+        spawnTriangles();
 
         // Check collisions
         checkCollisions();
@@ -804,7 +1230,19 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ playerName }) => {
         // Handle stealth skill cost
         const stealthSkill = currentState.skills.find(s => s.id === 'stealth');
         if (stealthSkill?.isActive) {
-          currentState.updateHumanity(-5 * (100 / 1000)); // -5 humanity per second
+          // Stealth skill is active - no balance effects needed
+        }
+
+        // Update power-up status from player
+        if (playerRef.current) {
+          const powerUpStatus = playerRef.current.getPowerUpStatus();
+          currentState.updatePowerUpStatus(powerUpStatus);
+          
+          // Update score from player
+          const playerScore = playerRef.current.getTotalScore();
+          if (playerScore !== currentState.score) {
+            currentState.updateScore(playerScore - currentState.score);
+          }
         }
       }
     }, 100);
@@ -849,106 +1287,182 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ playerName }) => {
         }}
       />
 
-      {/* Game HUD Overlay */}
+      {/* Elegant Game HUD */}
       <div className="game-hud" style={{
         position: 'absolute',
         top: 0,
         left: 0,
         right: 0,
-        height: '80px',
-        background: 'linear-gradient(to bottom, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.7) 70%, transparent 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 20px',
-        boxSizing: 'border-box'
+        zIndex: 1000,
+        pointerEvents: 'none'
       }}>
-        {/* Left side - Score & Stats */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '30px' }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ color: '#00ffff', fontSize: '24px', fontWeight: 'bold', fontFamily: 'Arial' }}>
-              {playerRef.current?.getTotalScore() || 0}
-            </div>
-            <div style={{ color: '#888', fontSize: '12px', fontFamily: 'Arial' }}>SCORE</div>
-          </div>
-
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ color: '#ffaa00', fontSize: '18px', fontWeight: 'bold', fontFamily: 'Arial' }}>
-              {playerRef.current?.getAllCells().length || 0}
-            </div>
-            <div style={{ color: '#888', fontSize: '12px', fontFamily: 'Arial' }}>CELLS</div>
-          </div>
-        </div>
-
-        {/* Center - Player Name */}
-        <div style={{ textAlign: 'center', flex: 1 }}>
-          <div style={{
-            color: '#00ffff',
-            fontSize: '28px',
-            fontWeight: 'bold',
-            fontFamily: 'Arial',
-            textShadow: '0 0 10px rgba(0, 255, 255, 0.5)'
-          }}>
-            {playerName}
-          </div>
-        </div>
-
-        {/* Right side - Split Cooldown */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          {playerRef.current && (
+        {/* Top Bar - Main Status */}
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(0, 0, 0, 0.95) 0%, rgba(20, 20, 40, 0.95) 100%)',
+          border: '2px solid #00ffff',
+          borderRadius: '0 0 15px 15px',
+          margin: '0 20px',
+          padding: '12px 20px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          boxShadow: '0 4px 20px rgba(0, 255, 255, 0.3)',
+          backdropFilter: 'blur(10px)'
+        }}>
+          {/* Left - Score & Player Info */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '25px' }}>
+            {/* Score */}
             <div style={{ textAlign: 'center' }}>
-              {playerRef.current.canSplit() ? (
-                <div style={{
-                  padding: '5px 10px',
-                  background: 'rgba(0, 255, 255, 0.2)',
-                  border: '1px solid #00ffff',
-                  borderRadius: '4px',
-                  color: '#00ffff',
-                  fontSize: '12px',
-                  fontFamily: 'Arial'
-                }}>
-                  SPLIT READY
-                </div>
-              ) : (
-                <div>
+              <div style={{ 
+                color: '#00ffff', 
+                fontSize: '22px', 
+                fontWeight: 'bold',
+                textShadow: '0 0 10px rgba(0, 255, 255, 0.5)',
+                fontFamily: 'monospace'
+              }}>
+                {playerRef.current?.getTotalScore() || 0}
+              </div>
+              <div style={{ color: '#888', fontSize: '10px', fontFamily: 'monospace' }}>SCORE</div>
+            </div>
+
+            {/* Player Name */}
+            <div style={{ textAlign: 'center' }}>
+              <div style={{
+                color: '#ffffff',
+                fontSize: '18px',
+                fontWeight: 'bold',
+                fontFamily: 'monospace',
+                textShadow: '0 0 8px rgba(255, 255, 255, 0.3)'
+              }}>
+                {playerName}
+              </div>
+              <div style={{ color: '#888', fontSize: '10px', fontFamily: 'monospace' }}>PLAYER</div>
+            </div>
+
+            {/* Cells Count */}
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ 
+                color: '#ffaa00', 
+                fontSize: '18px', 
+                fontWeight: 'bold',
+                textShadow: '0 0 8px rgba(255, 170, 0, 0.5)',
+                fontFamily: 'monospace'
+              }}>
+                {playerRef.current?.getAllCells().length || 0}
+              </div>
+              <div style={{ color: '#888', fontSize: '10px', fontFamily: 'monospace' }}>CELLS</div>
+            </div>
+          </div>
+
+          {/* Center - Game Status */}
+          <div style={{ textAlign: 'center', flex: 1 }}>
+            <div style={{
+              color: '#00ffff',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              fontFamily: 'monospace',
+              textShadow: '0 0 8px currentColor'
+            }}>
+              HUMANITY PROTOCOL
+            </div>
+            <div style={{ color: '#888', fontSize: '10px', fontFamily: 'monospace' }}>
+              SURVIVE & GROW
+            </div>
+          </div>
+
+          {/* Right - Split System */}
+          {playerRef.current && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+              {/* Split Status */}
+              <div style={{ textAlign: 'center' }}>
+                {playerRef.current.canSplit() ? (
                   <div style={{
-                    width: '100px',
-                    height: '8px',
-                    background: 'rgba(255, 255, 255, 0.2)',
-                    borderRadius: '4px',
+                    padding: '6px 12px',
+                    background: 'linear-gradient(135deg, rgba(0, 255, 255, 0.2), rgba(0, 200, 255, 0.3))',
+                    border: '1px solid #00ffff',
+                    borderRadius: '8px',
+                    color: '#00ffff',
+                    fontSize: '11px',
+                    fontFamily: 'monospace',
+                    fontWeight: 'bold',
+                    textShadow: '0 0 5px rgba(0, 255, 255, 0.5)',
+                    boxShadow: '0 0 10px rgba(0, 255, 255, 0.3)'
+                  }}>
+                    SPLIT READY
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{
+                      width: '80px',
+                      height: '6px',
+                      background: 'rgba(0, 255, 255, 0.2)',
+                      border: '1px solid #00ffff',
+                      borderRadius: '3px',
+                      overflow: 'hidden',
+                      marginBottom: '4px'
+                    }}>
+                      <div style={{
+                        width: `${100 * (1 - playerRef.current.getSplitCooldownProgress())}%`,
+                        height: '100%',
+                        background: 'linear-gradient(90deg, #00ffff, #00aaff)',
+                        borderRadius: '3px',
+                        transition: 'width 0.3s ease',
+                        boxShadow: '0 0 5px rgba(0, 255, 255, 0.5)'
+                      }} />
+                    </div>
+                    <div style={{ color: '#00ffff', fontSize: '10px', fontFamily: 'monospace' }}>
+                      SPLIT ({(playerRef.current.getSplitCooldownProgress() * 7.5).toFixed(1)}s)
+                    </div>
+                  </div>
+                )}
+                <div style={{ color: '#888', fontSize: '9px', fontFamily: 'monospace', marginTop: '2px' }}>
+                  L{playerRef.current.getSplitLevel()}/{playerRef.current.getMaxSplitLevel()}
+                </div>
+              </div>
+
+              {/* Fusion Status */}
+              {playerRef.current.getAllCells().length > 1 && (
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{
+                    width: '80px',
+                    height: '6px',
+                    background: 'rgba(255, 0, 255, 0.2)',
+                    border: '1px solid #ff00ff',
+                    borderRadius: '3px',
                     overflow: 'hidden',
-                    marginBottom: '5px'
+                    marginBottom: '4px'
                   }}>
                     <div style={{
-                      width: `${100 * (1 - playerRef.current.getSplitCooldownProgress())}%`,
+                      width: `${100 * (1 - playerRef.current.getFusionCooldownProgress())}%`,
                       height: '100%',
-                      background: '#00ffff',
-                      borderRadius: '4px',
-                      transition: 'width 0.1s ease'
+                      background: 'linear-gradient(90deg, #ff00ff, #ff80ff)',
+                      borderRadius: '3px',
+                      transition: 'width 0.3s ease',
+                      boxShadow: '0 0 5px rgba(255, 0, 255, 0.5)'
                     }} />
                   </div>
-                  <div style={{ color: '#00ffff', fontSize: '12px', fontFamily: 'Arial' }}>
-                    SPLIT ({(playerRef.current.getSplitCooldownProgress() * 15).toFixed(0)}s)
+                  <div style={{ color: '#ff00ff', fontSize: '10px', fontFamily: 'monospace' }}>
+                    FUSION ({(playerRef.current.getFusionCooldownRemaining() / 1000).toFixed(1)}s)
                   </div>
                 </div>
               )}
-              <div style={{ color: '#888', fontSize: '10px', fontFamily: 'Arial', marginTop: '2px' }}>
-                Cells: {playerRef.current.getAllCells().length}/16
+
+              {/* Game Status */}
+              <div style={{ textAlign: 'center' }}>
+                <div style={{
+                  color: gameStore.isPaused ? '#ff4444' : '#00ff00',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  fontFamily: 'monospace',
+                  textShadow: '0 0 5px currentColor'
+                }}>
+                  {gameStore.isPaused ? 'PAUSED' : 'ACTIVE'}
+                </div>
               </div>
             </div>
           )}
-
-          <div style={{ textAlign: 'center' }}>
-            <div style={{
-              color: gameStore.isPaused ? '#ff4444' : '#00ff00',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              fontFamily: 'Arial'
-            }}>
-              {gameStore.isPaused ? 'PAUSED' : 'PLAYING'}
-            </div>
-          </div>
         </div>
+
       </div>
 
       {/* Bottom Controls */}
@@ -990,7 +1504,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ playerName }) => {
       <MiniMap
         camera={cameraRef.current}
         playerPosition={playerRef.current?.position || { x: 0, y: 0 }}
-        entities={[...(playerRef.current ? [playerRef.current] : []), ...botsRef.current, ...pelletsRef.current]}
+        entities={[...(playerRef.current ? [playerRef.current] : []), ...botsRef.current, ...pelletsRef.current, ...speedBoostsRef.current, ...pointMultipliersRef.current, ...fusionCooldownReductionsRef.current]}
         canvasSize={canvasSize}
         worldBounds={getGameConfig(canvasSize.width, canvasSize.height).worldBounds}
       />
