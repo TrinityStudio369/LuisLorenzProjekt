@@ -1,0 +1,11 @@
+# Task ID: 2
+# Title: Test Docker-MCP Integration
+# Status: pending
+# Dependencies: 1
+# Priority: medium
+# Description: Verify that Docker MCP server works with Task-Master
+# Details:
+Test Docker container operations through MCP interface
+
+# Test Strategy:
+Run Docker commands via MCP tools

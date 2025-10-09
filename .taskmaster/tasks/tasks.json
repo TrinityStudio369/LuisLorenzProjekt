@@ -1,0 +1,446 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Docker Environment Setup",
+        "description": "Set up Docker environment for development and testing of the React game project",
+        "status": "done",
+        "priority": "high",
+        "dependencies": [],
+        "details": "Configure Docker for local development, create docker-compose.yml for the React app, set up development containers",
+        "testStrategy": "Verify Docker containers start successfully, React app runs in container",
+        "subtasks": [],
+        "updatedAt": "2025-10-04T23:53:48.252Z"
+      },
+      {
+        "id": 2,
+        "title": "Test Docker-MCP Integration",
+        "description": "Verify that Docker MCP server works with Task-Master",
+        "status": "done",
+        "priority": "medium",
+        "dependencies": [
+          "1"
+        ],
+        "details": "Test Docker container operations through MCP interface",
+        "testStrategy": "Run Docker commands via MCP tools",
+        "subtasks": [],
+        "updatedAt": "2025-10-04T23:53:56.757Z"
+      }
+    ],
+    "metadata": {
+      "version": "1.0.0",
+      "lastModified": "2025-10-04T23:53:56.757Z",
+      "taskCount": 2,
+      "completedCount": 2,
+      "tags": [
+        "master"
+      ],
+      "created": "2025-10-05T00:14:38.032Z",
+      "description": "Tasks for master context"
+    }
+  },
+  "storyline-überarbeitung": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Set Up Project Structure and Dependencies",
+        "description": "Initialize the React project with TypeScript, install required libraries, and configure the development environment.",
+        "details": "Use create-react-app with TypeScript template: npx create-react-app humanity-protocol --template typescript. Install Zustand for state management: npm install zustand. Install Framer Motion for animations: npm install framer-motion. Install Howler.js for audio: npm install howler. Set up HTML5 Canvas in the main App component. Configure ESLint and Prettier for code quality. Pseudo-code: import { create } from 'zustand'; const useGameStore = create((set) => ({ gameState: {}, setGameState: (newState) => set({ gameState: newState }) }));",
+        "testStrategy": "Verify project builds without errors using npm run build. Test library imports in a sample component. Run unit tests for store initialization using Jest.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 2,
+        "title": "Implement Basic Game Engine with Canvas Rendering",
+        "description": "Create the core game loop and canvas-based rendering system for entities.",
+        "details": "In a GameEngine class, set up requestAnimationFrame for the game loop with delta-time calculations: class GameEngine { constructor(canvas) { this.canvas = canvas; this.ctx = canvas.getContext('2d'); this.lastTime = 0; this.entities = []; } update(delta) { this.entities.forEach(e => e.update(delta)); } draw() { this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height); this.entities.forEach(e => e.draw(this.ctx)); } loop(timestamp) { const delta = timestamp - this.lastTime; this.lastTime = timestamp; this.update(delta / 1000); this.draw(); requestAnimationFrame(this.loop.bind(this)); } } Integrate with React using useRef and useEffect to start the loop.",
+        "testStrategy": "Manual testing: Ensure canvas renders a blank screen without errors. Unit test update and draw methods with mock entities. Performance test with 60 FPS target.",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 3,
+        "title": "Develop Player Code Entity with Movement and Growth",
+        "description": "Implement the player code that moves via mouse input and grows by consuming pellets.",
+        "details": "Create PlayerCode class extending Entity: class PlayerCode extends Entity { constructor() { super({x: 0, y: 0, size: 10, color: 'blue'}); this.speed = 100; } update(delta, mousePos) { const dx = mousePos.x - this.x; const dy = mousePos.y - this.y; const dist = Math.sqrt(dx*dx + dy*dy); if (dist > 1) { this.x += (dx / dist) * this.speed * delta; this.y += (dy / dist) * this.speed * delta; } } grow(amount) { this.size += amount; } } Handle mouse events in React component to pass position to the engine.",
+        "testStrategy": "Simulate mouse movements and verify position updates. Test growth method increases size correctly. Integration test: Move player in canvas and check rendering.",
+        "priority": "high",
+        "dependencies": [
+          2
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 4,
+        "title": "Implement Data Pellets Spawning and Consumption",
+        "description": "Spawn data pellets randomly and handle consumption by the player code.",
+        "details": "Create Pellet class: class Pellet extends Entity { constructor(x, y) { super({x, y, size: 5, color: 'yellow'}); this.balanceEffect = Math.random() > 0.5 ? 'humanity' : 'ai'; } } In GameEngine, add spawnPellets method to add new pellets periodically. On collision with player, call player.grow(1) and update balance based on effect, then remove pellet.",
+        "testStrategy": "Unit test pellet spawning with random positions. Test consumption logic updates score and balance. Manual test: Ensure pellets appear and disappear on contact.",
+        "priority": "medium",
+        "dependencies": [
+          3
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 5,
+        "title": "Add Collision Detection System",
+        "description": "Implement optimized collision detection for entities.",
+        "status": "pending",
+        "dependencies": [
+          2
+        ],
+        "priority": "high",
+        "details": "Implemented in collisionDetection.ts with isColliding() for circle collision checks, checkCollisions() for pairwise detection among all entities, and additional functions including getDistance(), pointInCircle(), rectangleOverlap(), and CollisionResult interface. Includes game-specific logic for player-pellet consumption, player-bot fights, and anti-cannibalism. Called in the update loop within GameCanvas.tsx. The implementation is more optimized than originally planned with a dedicated module and reusable functions.",
+        "testStrategy": "Unit tests for collision function with various positions and sizes. Performance test with many entities. Integration test: Verify player-pellet collisions trigger consumption.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Basic Collision Check Function",
+            "description": "Create the function to check for collisions between two entities using circle collision detection.",
+            "status": "completed",
+            "dependencies": [],
+            "details": "Implemented as isColliding() function in collisionDetection.ts: const dx = a.x - b.x; const dy = a.y - b.y; const dist = Math.sqrt(dx*dx + dy*dy); return dist < a.size + b.size;",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement Pairwise Collision Detection",
+            "description": "Develop a system to perform collision checks between all pairs of entities.",
+            "status": "completed",
+            "dependencies": [
+              1
+            ],
+            "details": "Implemented as checkCollisions() function in collisionDetection.ts to loop through all entity pairs and use the isColliding function to detect collisions.",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Integrate Pairwise Detection into Update Loop",
+            "description": "Incorporate the pairwise collision detection into the game's update loop.",
+            "status": "completed",
+            "dependencies": [
+              2
+            ],
+            "details": "Call the checkCollisions() function within the update loop in GameCanvas.tsx, ensuring it runs each frame.",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Implement Collision Optimization",
+            "description": "Integrate optimization techniques for collision detection to handle high entity counts efficiently.",
+            "status": "completed",
+            "dependencies": [
+              1
+            ],
+            "details": "Implemented advanced features in collisionDetection.ts including CollisionResult interface, getDistance(), pointInCircle(), and rectangleOverlap() for optimized collision handling, providing better performance than originally planned quadtree approach.",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Tune Performance and Integrate Optimized System",
+            "description": "Replace the pairwise system with the optimized version in the update loop and perform performance tuning.",
+            "status": "completed",
+            "dependencies": [
+              3,
+              4
+            ],
+            "details": "Integrated the optimized collision system with advanced functions into the update loop. Tested performance with high entity counts and optimized as needed, including unit tests for accuracy and efficiency.",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Implement Game-Specific Collision Logic",
+            "description": "Add logic for specific collision scenarios in the game.",
+            "status": "completed",
+            "dependencies": [
+              2,
+              4
+            ],
+            "details": "Implemented player-pellet consumption, player-bot fights, and anti-cannibalism prevention as part of the collision detection system.",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Create Basic HUD and Main Menu",
+        "description": "Develop the heads-up display for score and code size, and the main menu with start button.",
+        "details": "Use React components overlayed on canvas: const HUD = () => { const { score, size } = useGameStore(); return <div>Score: {score} Size: {size}</div>; }; MainMenu component with Framer Motion animations for neon-cyberpunk design, displaying the game title 'Humanity Protocol - Der letzte Code, um Menschlichkeit zu bewahren', and start button that initializes game state.",
+        "testStrategy": "Snapshot testing for HUD component. Manual test menu transitions and button starts game. Ensure responsive design with CSS media queries.",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          2
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 7,
+        "title": "Implement Balance Mechanic and Win/Lose Conditions",
+        "description": "Add humanity and AI-control tracking, update on pellet consumption, and check for win/lose states.",
+        "details": "Extend GameState in Zustand: { humanity: 50, aiControl: 50, updateBalance: (type, amount) => set(state => { if (type === 'humanity') return { humanity: state.humanity + amount, aiControl: state.aiControl - amount/2 }; else return { aiControl: state.aiControl + amount, humanity: state.humanity - amount/2 }; }) } In game loop, check if humanity >=85 && aiControl <=20 for win, or extremes for lose, then show end screens.",
+        "testStrategy": "Unit test balance updates maintain total around 100. Test win/lose conditions trigger correctly. Simulate game scenarios to reach conditions.",
+        "priority": "high",
+        "dependencies": [
+          4,
+          6
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 8,
+        "title": "Develop NPC Systems for Civilians, Drones, and Nodes",
+        "description": "Implement green civilian codes for recruitment, red drone codes for pursuit, and purple AI nodes for breaching.",
+        "details": "Create NPC classes: class CivilianCode extends Entity { behavior() { // random movement } } class DroneCode extends Entity { update(delta, player) { // chase player } } class Node extends Entity { // static, can be breached } Add recruitment logic on collision with player if conditions met, ally system to follow player.",
+        "testStrategy": "Test NPC behaviors in isolation. Integration test: Verify recruitment adds allies, drones chase, nodes respond to interactions.",
+        "priority": "medium",
+        "dependencies": [
+          5,
+          3
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Civilian Code Class and Random Movement Behavior",
+            "description": "Create the CivilianCode class extending Entity and implement its random movement behavior.",
+            "dependencies": [],
+            "details": "Define class CivilianCode extends Entity with properties like position, size, color 'green', and a behavior() method that handles random movement logic.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement Drone Code Class and Pursuit Behavior",
+            "description": "Create the DroneCode class extending Entity and implement its pursuit behavior to chase the player.",
+            "dependencies": [],
+            "details": "Define class DroneCode extends Entity with properties like position, size, color 'red', and an update(delta, player) method that calculates direction towards the player and moves accordingly.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Implement Node Class and Breaching Logic",
+            "description": "Create the Node class extending Entity as a static entity and implement basic breaching functionality.",
+            "dependencies": [],
+            "details": "Define class Node extends Entity with properties like position, size, color 'purple', marked as static, and methods or flags to handle breaching interactions.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Implement Collision Detection for NPCs",
+            "description": "Add collision detection logic between the player and all NPC types.",
+            "dependencies": [
+              "8.1",
+              "8.2",
+              "8.3"
+            ],
+            "details": "Integrate collision checks in the game loop or entity updates, detecting overlaps with player for triggering type-specific interactions.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Implement Recruitment and Ally System for Civilians",
+            "description": "Develop logic for recruiting civilians on collision if conditions are met, and implement ally following system.",
+            "dependencies": [
+              "8.1",
+              "8.4"
+            ],
+            "details": "On player-civilian collision, check conditions (e.g., player size), recruit by converting to ally, and add follow logic where allies update position based on player's position.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Conduct Integration Testing for NPC Systems",
+            "description": "Perform integration tests to verify NPC behaviors, collisions, recruitment, and overall system functionality.",
+            "dependencies": [
+              "8.1",
+              "8.2",
+              "8.3",
+              "8.4",
+              "8.5"
+            ],
+            "details": "Test isolated behaviors, simulate collisions to check recruitment and pursuit, ensure nodes can be breached, and verify allies follow player without issues.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Implement Special Skills with Cooldowns",
+        "description": "Add Parley, Stealth, Decoy, and Breach skills with individual cooldowns and UI indicators.",
+        "details": "In state store, add skills array with {name, cooldown, remaining}. On activation, apply effects e.g., Stealth: set player.visible = false for duration. Use setInterval for cooldown ticks. Bind to keyboard inputs.",
+        "testStrategy": "Unit test cooldown decrement and activation logic. Manual test each skill's effect in game (e.g., Stealth hides player). Ensure no overlaps or bugs in concurrent use.",
+        "priority": "medium",
+        "dependencies": [
+          7,
+          8
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Set Up State Management for Skills",
+            "description": "Add skills array to the state store with properties for name, cooldown, and remaining time.",
+            "dependencies": [],
+            "details": "Extend the GameState in Zustand to include skills: [{name: 'Parley', cooldown: 30, remaining: 0}, {name: 'Stealth', cooldown: 20, remaining: 0}, {name: 'Decoy', cooldown: 25, remaining: 0}, {name: 'Breach', cooldown: 40, remaining: 0}]. Include methods to update remaining time and activate skills.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement Cooldown Mechanics",
+            "description": "Create cooldown timers using setInterval to decrement remaining time for each skill.",
+            "dependencies": [
+              "9.1"
+            ],
+            "details": "In the game loop or a dedicated timer, use setInterval to tick down the remaining time for active cooldowns. Ensure cooldown starts upon skill activation and prevents reactivation until remaining reaches 0.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Define Skill Effects",
+            "description": "Implement the effects for each skill upon activation, such as setting player visibility for Stealth.",
+            "dependencies": [
+              "9.2"
+            ],
+            "details": "For Stealth: set player.visible = false for a duration, then revert. For Parley: negotiate with AI cells temporarily. For Decoy: spawn decoy entities. For Breach: allow passing through obstacles. Apply effects immediately on activation and handle duration with timers.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Bind Skills to Keyboard Inputs",
+            "description": "Bind each skill to specific keyboard inputs for activation.",
+            "dependencies": [
+              "9.3"
+            ],
+            "details": "Use event listeners for key presses (e.g., 'P' for Parley, 'S' for Stealth). Check if remaining cooldown is 0 before activating the skill and starting the cooldown.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Add UI Indicators for Skills",
+            "description": "Create UI elements to display skill availability and cooldown progress.",
+            "dependencies": [
+              "9.4"
+            ],
+            "details": "Use React components to show icons or bars for each skill, updating in real-time based on remaining cooldown. Integrate with Framer Motion for smooth animations of cooldown progress.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Add Polishing Elements: Intro Story, Audio, Particles, and Optimizations",
+        "description": "Implement intro sequence, audio effects, particle system, performance optimizations, and mobile responsiveness.",
+        "details": "Use Framer Motion for typewriter intro text narrating the story of 'Humanity Protocol - Der letzte Code, um Menschlichkeit zu bewahren'. Integrate Howler.js: const sound = new Howl({src: ['eat.mp3']}); sound.play() on events. Particle system: class Particle { update() { // move and fade } } Add to engine. Optimize rendering with dirty flags. Use CSS for responsive canvas scaling.",
+        "testStrategy": "Test intro sequence flows correctly. Verify audio plays on actions without lag. Performance test particle effects maintain FPS. Responsive testing on mobile emulators.",
+        "priority": "low",
+        "dependencies": [
+          6,
+          9
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Intro Sequence",
+            "description": "Create an introductory story sequence using typewriter text animation.",
+            "dependencies": [],
+            "details": "Use Framer Motion for typewriter intro text. Ensure it flows into the main game.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Integrate Audio Effects",
+            "description": "Add sound effects for game events using Howler.js.",
+            "dependencies": [
+              "10.1"
+            ],
+            "details": "Integrate Howler.js: const sound = new Howl({src: ['eat.mp3']}); sound.play() on events like pellet consumption.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Add Particle System",
+            "description": "Implement a particle system for visual effects.",
+            "dependencies": [
+              "10.1"
+            ],
+            "details": "Particle system: class Particle { update() { // move and fade } } Add to engine for effects on collisions or actions.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Performance Optimizations",
+            "description": "Optimize game rendering and performance.",
+            "dependencies": [
+              "10.2",
+              "10.3"
+            ],
+            "details": "Optimize rendering with dirty flags to reduce unnecessary updates.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Mobile Responsiveness",
+            "description": "Ensure the game is responsive on mobile devices.",
+            "dependencies": [
+              "10.4"
+            ],
+            "details": "Use CSS for responsive canvas scaling and test touch inputs.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Final Testing",
+            "description": "Conduct comprehensive testing of all polishing elements.",
+            "dependencies": [
+              "10.1",
+              "10.2",
+              "10.3",
+              "10.4",
+              "10.5"
+            ],
+            "details": "Test intro sequence, audio, particles, performance, and responsiveness as per test strategy.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "created": "2025-10-05T00:13:50.411Z",
+      "updated": "2025-10-05T11:33:02.432Z",
+      "description": "Tasks for storyline-überarbeitung context"
+    }
+  }
+}
+
+

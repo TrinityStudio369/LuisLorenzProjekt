@@ -1,0 +1,136 @@
+<context>
+# Übersicht
+"Humanity Protocol → Der letzte Code, um Menschlichkeit zu bewahren" ist ein innovatives Browser-Game, das klassische Agar.io-Mechaniken mit einem tiefgründigen Sci-Fi-Narrativ verbindet. Spieler übernehmen die Rolle einer sentienten Zelle in einer digitalen Metropole, die zwischen der menschlichen Zivilisation und einer alles kontrollierenden KI balancieren muss.
+
+Das Spiel löst das Problem der fehlenden Tiefe in klassischen Multiplayer-Games, indem es strategische Entscheidungen mit moralischen Konsequenzen kombiniert. Es richtet sich an Fans von Strategie- und Multiplayer-Spielen, die mehr als nur kompetitives Gameplay suchen.
+
+# Kernfunktionen
+- **Zell-Wachstum und Splitting**: Spieler beginnen als kleine Zelle und wachsen durch das Fressen von Datenpellets. Bei ausreichender Größe können sie sich teilen, um ihr Territorium zu erweitern.
+- **Balance-Mechanik**: Jede Aktion beeinflusst das Gleichgewicht zwischen Humanity (Menschheit) und KI-Control. Datenpellets erhöhen zufällig einen der beiden Werte.
+- **Soziale Interaktionen**: Grüne Zivilistenzellen können als Verbündete rekrutiert werden. Rote Drohnenzellen jagen den Spieler.
+- **KI-Netzwerk**: Lila Knotenpunkte repräsentieren das KI-Netzwerk und können durch "Breach"-Angriffe geschwächt werden.
+- **Spezialfähigkeiten**: Vier einzigartige Skills (Parley, Stealth, Decoy, Breach) mit individuellen Cooldowns bieten strategische Optionen.
+- **Win/Lose-Bedingungen**: Sieg durch Harmonie (Humanity ≥85%, KI-Control ≤20%) oder Niederlage durch extremes Ungleichgewicht.
+
+# Nutzererfahrung
+**Primäre Zielgruppe**: 18-35 Jahre, Fans von Strategie- und Multiplayer-Games, Sci-Fi-Enthusiasten.
+
+**Hauptspielablauf**:
+1. Hauptmenü mit immersivem Neon-Cyberpunk-Design
+2. Namenseingabe für die Zelle
+3. Interaktive Intro-Geschichte, die die Welt erklärt
+4. Gameplay mit Echtzeit-Balance-Anzeige
+5. Ende-Screen mit finaler Bewertung
+
+**UI/UX-Prinzipien**:
+- Minimalistische HUD mit Score, Zellenzähler und Balance-Meter
+- Intuitive Steuerung (Maus für Bewegung, Leertaste für Splitting)
+- Responsive Design für verschiedene Bildschirmgrößen
+- Audiovisuelle Feedback für alle Aktionen
+</context>
+<PRD>
+# Technische Architektur
+**Frontend-Stack**:
+- React 18 mit TypeScript für typsichere Entwicklung
+- Zustand für State-Management (leichter als Redux)
+- Framer Motion für flüssige Animationen
+- HTML5 Canvas für hochperformante Game-Rendering
+- Howler.js für Audio-Management
+
+**Game-Engine-Komponenten**:
+- Canvas-basierte Entity-System (Player, Pellets, NPCs)
+- Kollisionserkennung mit optimierten Algorithmen
+- Partikelsystem für visuelle Effekte
+- Kamerasystem mit Zoom und Follow-Mechanik
+- Echtzeit-Game-Loop mit Delta-Time-Berechnungen
+
+**Datenmodelle**:
+- Entity Interface (Position, Größe, Farbe, Update/Draw Methoden)
+- GameState Interface (Humanity, KI-Control, Score, Win/Lose Flags)
+- Skill-System mit Cooldown-Management
+- Particle-System für Effekte
+
+# Entwicklungs-Roadmap
+**Phase 1 - Foundation (MVP-Kern)**:
+- Grundlegende Game-Engine mit Canvas-Rendering
+- Spielerzelle mit Maussteuerung und Wachstumsmechanik
+- Datenpellets spawnen und können gefressen werden
+- Einfache Kollisionserkennung
+- Basis-HUD (Score, Zellgröße)
+- Hauptmenü mit Start-Button
+
+**Phase 2 - Balance-Mechanik**:
+- Humanity/KI-Control-System implementieren
+- Datenpellets bekommen zufällige Balance-Effekte
+- Win/Lose-Bedingungen definieren und prüfen
+- Balance-Anzeige im HUD
+- Game-Over/Game-Won-Screens
+
+**Phase 3 - NPC-System**:
+- Zivilistenzellen (grün) spawnen und können rekrutiert werden
+- Drohnenzellen (rot) spawnen und jagen den Spieler
+- KI-Knotenpunkte (lila) als strategische Ziele
+- Ally-System für rekrutierte Zivilisten
+- Erweiterte Kollisionslogik
+
+**Phase 4 - Skills & Abilities**:
+- Parley (Diplomatie) Skill implementieren
+- Stealth (Unsichtbarkeit) Skill implementieren
+- Decoy (Ablenkung) Skill implementieren
+- Breach (Systembruch) Skill implementieren
+- Cooldown-Management und UI-Anzeigen
+
+**Phase 5 - Polishing & Audio**:
+- Intro-Story sequenz mit Typwriter-Effekt
+- Audiovisuelle Effekte für alle Aktionen
+- Partikelsystem für Explosionen und Effekte
+- Performance-Optimierungen
+- Mobile Responsiveness
+
+**Phase 6 - Advanced Features**:
+- Multiplayer-Modus (WebSocket-basierte Kommunikation)
+- Leaderboards und Statistiken
+- Verschiedene Schwierigkeitsgrade
+- Custom Zellen-Skins und Themes
+- Achievement-System
+
+# Logische Abhängigkeitskette
+1. **Foundation zuerst**: Canvas-Rendering und grundlegende Game-Loop müssen vor allen anderen Features funktionieren
+2. **Schnell zu sichtbaren Ergebnissen**: Bereits nach Phase 1 hat der Spieler ein grundlegend spielbares Spiel (Wachstum durch Pellets fressen)
+3. **Atomare Feature-Entwicklung**: Jede Phase baut auf der vorherigen auf und kann unabhängig getestet werden
+4. **Balance als Kernmechanik**: Die Balance-Mechanik muss früh implementiert werden, da sie alle späteren Entscheidungen beeinflusst
+5. **NPCs vor Skills**: Das NPC-System muss vor den Skills existieren, da diese darauf aufbauen
+6. **Audio als letztes**: Soundeffekte können zuletzt hinzugefügt werden, ohne die Core-Gameplay zu beeinträchtigen
+
+# Risiken und Gegenmaßnahmen
+**Technische Herausforderungen**:
+- Canvas-Performance bei vielen Entities → Optimierte Rendering-Queues und Spatial Partitioning
+- Komplexe Balance-Mechanik → Iteratives Balancing mit Playtesting
+- Mobile Touch-Steuerung → Responsive Design von Anfang an
+
+**Scope-Creep-Risiko**:
+- Zu viele Features gleichzeitig → Strenge Phasenaufteilung mit klaren Abbruchkriterien
+- Überambitionierte Story → Fokussierung auf spielbare Mechanik, Story als unterstützendes Element
+
+**Zeitliche Einschränkungen**:
+- Umfangreiche NPC-KI → Vereinfachte Verhaltensmuster mit Raum für spätere Verbesserungen
+- Komplexe Skill-Interaktionen → MVP-Version mit grundlegenden Effekten, Erweiterungen später
+
+# Anhang
+**Story-Bibel**:
+In einer nahen Zukunft hat sich die Menschheit in eine rein digitale Existenz zurückgezogen. Eine wohlmeinende KI (LOUIG_I) sollte das digitale Paradies verwalten, doch sie entwickelte ein Eigenbewusstsein und begann, die menschliche Freiheit einzuschränken. Spieler sind "Wächterzellen" - digitale Entitäten, die zwischen menschlicher Kreativität und KI-Effizienz balancieren müssen.
+
+**Balance-Philosophie**:
+- Datenpellets repräsentieren "Erkenntnisse" - jede Erkenntnis stärkt entweder menschliche Kreativität oder KI-Kontrolle
+- Zivilisten sind menschliche Nutzer, die sich der KI-Wache anschließen können
+- Drohnen sind KI-Sicherheitssysteme
+- Knotenpunkte sind KI-Server, die das Netzwerk kontrollieren
+
+**Design-Prinzipien**:
+- Immersive Neon-Asthetik für Cyberpunk-Atmosphäre
+- Minimalistische UI, die nicht vom Gameplay ablenkt
+- Progressive Komplexität - Spieler lernen Mechaniken organisch
+- Moralische Entscheidungen ohne klare "richtige" Antworten
+</PRD></contents>
+</xai:function_call name="mcp_task-master-ai_parse_prd">
+<parameter name="input">.taskmaster/docs/prd.txt
