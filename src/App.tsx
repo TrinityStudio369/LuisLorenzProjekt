@@ -8,15 +8,17 @@ import { useGameStore } from './stores/gameStore';
 type GameState = 'menu' | 'nameInput' | 'intro' | 'playing' | 'paused' | 'won' | 'lost';
 
 // Audio system with user permission
-const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+const audioContext = typeof window !== 'undefined' 
+  ? new (window.AudioContext || (window as any).webkitAudioContext)()
+  : null;
 
 const menuMusic = {
   play: () => {
-    if (audioContext.state === 'suspended') {
+    if (audioContext && audioContext.state === 'suspended') {
       audioContext.resume().then(() => {
         console.log('Menu music started (with user permission)');
       });
-    } else {
+    } else if (audioContext) {
       console.log('Menu music started');
     }
   },
@@ -25,11 +27,11 @@ const menuMusic = {
 
 const gameMusic = {
   play: () => {
-    if (audioContext.state === 'suspended') {
+    if (audioContext && audioContext.state === 'suspended') {
       audioContext.resume().then(() => {
         console.log('Game music started (with user permission)');
       });
-    } else {
+    } else if (audioContext) {
       console.log('Game music started');
     }
   },
