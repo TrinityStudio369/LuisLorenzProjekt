@@ -25,6 +25,10 @@
     "@types/jest": "^27.5.2",
     "@types/node": "^16.18.0"
   },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
   "browserslist": {
     "production": [
       ">0.2%",
