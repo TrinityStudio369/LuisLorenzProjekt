@@ -1,12 +1,8 @@
 {
-  "name": "humanity-protocol",
+  "name": "humanity-protocol-game",
   "version": "1.0.0",
   "description": "Humanity Protocol - Der letzte Code, um Menschlichkeit zu bewahren: Ein cyberpunk Agar.io-Spiel, in dem du zwischen Menschlichkeit und KI-Kontrolle balancierst",
   "main": "index.js",
-  "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0"
-  },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
