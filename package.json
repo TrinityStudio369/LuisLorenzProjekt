@@ -1,7 +1,7 @@
 {
-  "name": "humanity-protocol-game",
+  "name": "luis-lorenz-projekt",
   "version": "1.0.0",
-  "description": "Humanity Protocol - Der letzte Code, um Menschlichkeit zu bewahren: Ein cyberpunk Agar.io-Spiel, in dem du zwischen Menschlichkeit und KI-Kontrolle balancierst",
+  "description": "Luis Lorenz Projekt - Humanity Protocol: Der letzte Code, um Menschlichkeit zu bewahren",
   "main": "index.js",
   "scripts": {
     "start": "react-scripts start",
